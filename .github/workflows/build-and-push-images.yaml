@@ -1,0 +1,103 @@
+name: Build and Push Images
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BASE_IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  discover-go-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.discover.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Discover Go build tags
+        id: discover
+        run: |
+          TAGS=$(grep -Rho '^//go:build .*' . \
+            | sed 's|//go:build ||' \
+            | grep -E '^[a-zA-Z_][a-zA-Z0-9_]*$' \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          echo "Discovered tags:"
+          echo "$TAGS"
+
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: discover-go-tags
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        tag: ${{ fromJSON(needs.discover-go-tags.outputs.tags) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman jq
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            podman login ${{ env.REGISTRY }} \
+              --username ${{ github.actor }} \
+              --password-stdin
+
+      - name: Extract release version
+        id: version
+        run: |
+          # Get tag from GitHub release
+          VERSION="${GITHUB_REF_NAME##*/}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set image name
+        id: image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}-${{ matrix.tag }}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Build image
+        run: |
+          podman build \
+            --build-arg DDNS_PROVIDER_TAG=${{ matrix.tag }} \
+            --label org.opencontainers.image.authors="Franz Schwartau <425188+franzs@users.noreply.github.com>" \
+            --label org.opencontainers.image.base.name="${{ steps.image.outputs.image }}:${{ steps.version.outputs.version }}" \
+            --label org.opencontainers.image.description="Dynamic DNS service for usage with libdns (${{ matrix.tag }})" \
+            --label org.opencontainers.image.licenses="GPL-3.0-only" \
+            --label org.opencontainers.image.reversion="${GITHUB_SHA}" \
+            --label org.opencontainers.image.source="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label org.opencontainers.image.title="${{ env.BASE_IMAGE_NAME }}-${{ matrix.tag }}" \
+            --label org.opencontainers.image.version="${{ steps.version.outputs.version }}" \
+            --tag ${{ steps.image.outputs.image }}:${{ steps.version.outputs.version }} \
+            -f Containerfile .
+
+      - name: Push versioned image
+        run: |
+          podman push \
+            ${{ steps.image.outputs.image }}:${{ steps.version.outputs.version }}
+
+      - name: Tag and push latest
+        run: |
+          podman tag \
+            ${{ steps.image.outputs.image }}:${{ steps.version.outputs.version }} \
+            ${{ steps.image.outputs.image }}:latest
+
+          podman push \
+            ${{ steps.image.outputs.image }}:latest

@@ -1,0 +1,42 @@
+name: Release (Semantic Versioning)
+
+on:
+  push:
+    branches:
+      - "**"          # Trigger on all branches
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Required for semantic-release
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "On main branch: running full release"
+            npx semantic-release
+          else
+            echo "On non-main branch: running dry-run"
+            npx semantic-release --dry-run --branches "${GITHUB_REF_NAME}" --plugins "@semantic-release/commit-analyzer"
+          fi

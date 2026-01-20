@@ -1,7 +1,7 @@
-name: Release (Semantic Versioning)
+name: Check (Semantic Versioning)
 
 on:
-  push:
+  pull_request:
     branches:
       - main
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,4 +33,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
         run: |
-          npx semantic-release
+          npx semantic-release --dry-run --branches "${GITHUB_REF_NAME}" --plugins "@semantic-release/commit-analyzer"

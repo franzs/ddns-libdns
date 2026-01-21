@@ -81,8 +81,9 @@ jobs:
           fi
 
           mkdir -p "${distdir}"
-          go mod download
-          go build -o "${distdir}/ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}" .
+          go mod download -x
+          go build -v -o "${distdir}/ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}" .
+          ls -l "${distdir}"
 
   release:
     runs-on: ubuntu-latest

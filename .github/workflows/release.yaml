@@ -12,6 +12,78 @@ permissions:
   pull-requests: write
 
 jobs:
+  discover-go-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.discover.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Discover Go build tags
+        id: discover
+        run: |
+          TAGS=$(grep -Rho '^//go:build .*' . \
+            | sed 's|//go:build ||' \
+            | grep -E '^[a-zA-Z_][a-zA-Z0-9_]*$' \
+            | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+          echo "Discovered tags:"
+          echo "$TAGS"
+
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+
+  build:
+    needs: discover-go-tags
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        tag: ${{ fromJSON(needs.discover-go-tags.outputs.tags) }}
+        os:
+          - linux
+          - darwin
+          - windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Required for semantic-release
+
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build go binaries
+        run: |
+          distdir=dist
+
+          export GOOS=${{ matrix.os }}
+
+          if [ "${GOOS}" = "darwin" ]; then
+            export GOARCH="arm64"
+          else
+            export GOARCH="amd64"
+          fi
+
+          if [ "${GOOS}" = "windows" ]; then
+            extension=".exe"
+          else
+            extension=""
+          fi
+
+          mkdir -p "${distdir}"
+          go mod download
+          go build -o "${distdir}/ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}" .
+
   release:
     runs-on: ubuntu-latest
 

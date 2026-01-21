@@ -5,6 +5,7 @@ go 1.24.11
 require (
 	github.com/go-crypt/crypt v0.4.7
 	github.com/libdns/bunny v1.6.1
+	github.com/libdns/cloudflare v0.2.2
 	github.com/libdns/desec v1.0.1
 	github.com/libdns/hetzner/v2 v2.0.1
 	github.com/libdns/ionos v1.2.0

@@ -1,9 +1,27 @@
 {
-  "branches": ["main"],
+  "branches": [
+    "main"
+  ],
   "tagFormat": "v${version}",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    "@semantic-release/github"
+    "@semantic-release/github",
+    {
+      "assets": [
+        {
+          "path": "dist/*-linux-amd64",
+          "label": "Linux (amd64)"
+        },
+        {
+          "path": "dist/*-darwin-arm64",
+          "label": "macOS (arm64)"
+        },
+        {
+          "path": "dist/*-windows-amd64.exe",
+          "label": "Windows (amd64)"
+        }
+      ]
+    }
   ]
 }

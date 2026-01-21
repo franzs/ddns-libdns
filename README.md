@@ -54,6 +54,7 @@ export DDNS_AUTH_CONFIG=$(jq -c . < auth.json)
 Set one of following environment variables according to the DNS provider you'd like to use.
 
 * `DDNS_BUNNY_ACCESSKEY`
+* `DDNS_CLOUDFLARE_APITOKEN`
 * `DDNS_DESEC_TOKEN`
 * `DDNS_HETZNER_TOKEN`
 * `DDNS_IONOS_APITOKEN`

@@ -24,6 +24,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/libdns/bunny v1.6.1 h1:HIpYlYp+NeGyYa5o63EI9PAdm8EFqRHxaWmSXsjPxbA=
 github.com/libdns/bunny v1.6.1/go.mod h1:hXXog+nlrkUXRjpUoAj6wUMKnZ00SoMXl/EhDlxw38s=
+github.com/libdns/cloudflare v0.2.2 h1:XWHv+C1dDcApqazlh08Q6pjytYLgR2a+Y3xrXFu0vsI=
+github.com/libdns/cloudflare v0.2.2/go.mod h1:w9uTmRCDlAoafAsTPnn2nJ0XHK/eaUMh86DUk8BWi60=
 github.com/libdns/hetzner/v2 v2.0.1 h1:phsNc9er8JbVOCsytLG7VuMbCdTPsv+WWwNX1WCbk4Q=
 github.com/libdns/hetzner/v2 v2.0.1/go.mod h1:IkEcr62KG0rXYhs2K5VWCG4SFPUQWuI1SzlpXBz9amk=
 github.com/libdns/ionos v1.2.0 h1:FQ2xQTBfsjc7aMArRBBCs9l48Squt76GHXbxDsqOKgw=

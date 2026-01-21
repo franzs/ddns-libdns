@@ -1,5 +1,5 @@
-//go:build !bunny && !desec && !hetzner && !ionos
-// +build !bunny,!desec,!hetzner,!ionos
+//go:build !bunny && !cloudflare && !desec && !hetzner && !ionos
+// +build !bunny,!cloudflare,!desec,!hetzner,!ionos
 
 package main
 

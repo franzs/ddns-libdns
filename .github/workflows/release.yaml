@@ -58,15 +58,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
       - name: Build go binaries
         run: |
           dist_dir=dist

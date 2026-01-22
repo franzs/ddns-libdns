@@ -85,10 +85,20 @@ jobs:
             extension=""
           fi
 
+          binary_name="ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}"
+          echo "BINARY_NAME=${binary_name}" >> $GITHUB_ENV
+
           mkdir -p "${distdir}"
           go mod download -x
-          go build -v -o "${distdir}/ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}" .
+          go build -v -o "${distdir}/${binary_name}" .
           ls -l "${distdir}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.BINARY_NAME }}
+          path: ${{ env.BINARY_NAME }}
+          if-no-files-found: error
 
   release:
     needs: build
@@ -99,6 +109,16 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Required for semantic-release
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: ./assets
+          pattern: ddns-libdns-*
+          merge-multiple: true
+
+      - name: Display downloaded files
+        run: ls -R ./assets
 
       - name: Set up Node.js
         uses: actions/setup-node@v6

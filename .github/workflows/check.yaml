@@ -94,7 +94,9 @@ jobs:
           go vet -tags "${{ matrix.tag }}" -v
 
   ci-pass:
-    needs: check-go-source
+    needs:
+      - check-commit-messages
+      - check-go-source
     runs-on: ubuntu-latest
     name: CI passed
     steps:

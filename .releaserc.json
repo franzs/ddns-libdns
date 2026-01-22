@@ -6,22 +6,24 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    "@semantic-release/github",
-    {
-      "assets": [
-        {
-          "path": "assets/*-linux-amd64",
-          "label": "Linux (amd64)"
-        },
-        {
-          "path": "assets/*-darwin-arm64",
-          "label": "macOS (arm64)"
-        },
-        {
-          "path": "assets/*-windows-amd64.exe",
-          "label": "Windows (amd64)"
-        }
-      ]
-    }
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "assets/*-linux-amd64",
+            "label": "Linux (amd64)"
+          },
+          {
+            "path": "assets/*-darwin-arm64",
+            "label": "macOS (arm64)"
+          },
+          {
+            "path": "assets/*-windows-amd64.exe",
+            "label": "Windows (amd64)"
+          }
+        ]
+      }
+    ]
   ]
 }

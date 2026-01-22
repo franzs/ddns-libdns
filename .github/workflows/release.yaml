@@ -69,7 +69,7 @@ jobs:
 
       - name: Build go binaries
         run: |
-          distdir=dist
+          dist_dir=dist
 
           export GOOS=${{ matrix.os }}
 
@@ -87,10 +87,10 @@ jobs:
 
           binary_name="ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}"
 
-          mkdir -p "${distdir}"
+          mkdir -p "${dist_dir}"
           go mod download -x
-          go build -v -o "${distdir}/${binary_name}" .
-          ls -l "${distdir}"
+          go build -v -o "${dist_dir}/${binary_name}" .
+          ls -l "${dist_dir}"
 
           echo "BINARY_NAME=${binary_name}" >> $GITHUB_ENV
           echo "DIST_DIR=${dist_dir}" >> $GITHUB_ENV

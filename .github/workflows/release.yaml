@@ -86,18 +86,20 @@ jobs:
           fi
 
           binary_name="ddns-libdns-${{ matrix.tag }}-${GOOS}-${GOARCH}${extension}"
-          echo "BINARY_NAME=${binary_name}" >> $GITHUB_ENV
 
           mkdir -p "${distdir}"
           go mod download -x
           go build -v -o "${distdir}/${binary_name}" .
           ls -l "${distdir}"
 
+          echo "BINARY_NAME=${binary_name}" >> $GITHUB_ENV
+          echo "DIST_DIR=${dist_dir}" >> $GITHUB_ENV
+
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.BINARY_NAME }}
-          path: ${{ env.BINARY_NAME }}
+          path: ${{ env.DIST_DIR }}/${{ env.BINARY_NAME }}
           if-no-files-found: error
 
   release:

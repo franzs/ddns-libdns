@@ -48,6 +48,27 @@ jobs:
         run: |
           npx semantic-release --dry-run --branches "${GITHUB_REF_NAME}" --plugins "@semantic-release/commit-analyzer"
 
+  check-source-formatting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Check formatting
+        run: |
+          DIFF=$(gofmt -d .)
+          if [ -n "$DIFF" ]; then
+            echo "Formatting issues found:"
+            echo "$DIFF"
+            exit 1
+          fi
+
   discover-go-tags:
     runs-on: ubuntu-latest
     outputs:
@@ -97,6 +118,7 @@ jobs:
     needs:
       - check-commit-messages
       - check-go-source
+      - check-source-formatting
     runs-on: ubuntu-latest
     name: CI passed
     steps:

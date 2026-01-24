@@ -269,7 +269,13 @@ func main() {
 	http.HandleFunc("/v3/update", handleUpdate)
 
 	slog.Info("Starting ddns-libdns", "port", config.Port, "provider", identifier)
-	if err = http.ListenAndServe(":"+config.Port, nil); err != nil {
+	server := &http.Server{
+		Addr:         ":" + config.Port,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	if err = server.ListenAndServe(); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}

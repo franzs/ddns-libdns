@@ -80,7 +80,10 @@ func loadAuthUsers() error {
 }
 
 func inferZoneAndName(ctx context.Context, hostname string) (string, string, error) {
-	zones, _ := provider.ListZones(ctx)
+	zones, err := provider.ListZones(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to list zones: %w", err)
+	}
 
 	for _, z := range zones {
 		recordName := libdns.RelativeName(hostname, z.Name)

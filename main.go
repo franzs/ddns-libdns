@@ -262,8 +262,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Provider: %T\n", provider)
-
 	// Start Server
 	http.HandleFunc("/v3/update", handleUpdate)
 

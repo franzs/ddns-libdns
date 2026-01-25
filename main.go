@@ -231,6 +231,21 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("good " + myip))
 }
 
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	// Optionally check provider connectivity
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	if _, err := provider.ListZones(ctx); err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte("unhealthy: " + err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}
+
 func main() {
 	var (
 		identifier string
@@ -289,6 +304,8 @@ func main() {
 
 	// Start Server
 	http.HandleFunc("/v3/update", handleUpdate)
+	http.HandleFunc("/health", handleHealth)
+	http.HandleFunc("/ready", handleHealth)
 
 	slog.Info("Starting ddns-libdns", "port", config.Port, "provider", identifier)
 	server := &http.Server{

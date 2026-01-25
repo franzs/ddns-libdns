@@ -220,7 +220,7 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 		"hostname", normalizedHostname,
 		"zone", zone,
 		"recordname", recordName,
-		"ipaddr", myip)
+		"ipaddr", parsedIPAddrs)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("good " + myip))

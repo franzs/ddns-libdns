@@ -117,6 +117,9 @@ func updateDNS(ctx context.Context, zone, recordName string, ipaddrs []netip.Add
 func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	var parsedIPAddrs []netip.Addr
 
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
 	// --- Authentication & Authorization ---
 
 	// Check HTTP Basic Auth
@@ -202,14 +205,14 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zone, recordName, err := inferZoneAndName(r.Context(), normalizedHostname)
+	zone, recordName, err := inferZoneAndName(ctx, normalizedHostname)
 	if err != nil {
 		slog.Error(err.Error())
 		http.Error(w, "dnserr", http.StatusBadRequest)
 		return
 	}
 
-	if err := updateDNS(r.Context(), zone, recordName, parsedIPAddrs); err != nil {
+	if err := updateDNS(ctx, zone, recordName, parsedIPAddrs); err != nil {
 		slog.Error(err.Error())
 		http.Error(w, "dnserr", http.StatusInternalServerError)
 		return

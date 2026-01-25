@@ -130,6 +130,11 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Verify Credentials
 	user, exists := authUsers[username]
+	if !exists {
+		// Use a dummy hash to maintain consistent timing
+		user = User{PasswordHash: "$argon2id$v=19$m=4096,t=3,p=1$WThNMStEazRDM3NVQkIxOXlVaHRaQT09$3XjzaHozsLfjY3ejWY91y7sQ964r49uBsB15PZWVOGw"}
+	}
+
 	valid, err := crypt.CheckPassword(password, user.PasswordHash)
 	if !exists || !valid || err != nil {
 		// Differentiate slightly for logs, but return Generic 401 to client

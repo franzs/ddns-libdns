@@ -181,15 +181,16 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, ip := range strings.Split(myip, ",") {
-		if ip == "0.0.0.0" || ip == "::0" {
-			continue
-		}
-
 		parsedIPAddr, err := netip.ParseAddr(ip)
 		if err != nil {
 			slog.Error("Unable to parse ip address using netip.ParseAddr()", "ipaddr", ip)
 			http.Error(w, "badrequest", http.StatusBadRequest)
 			return
+		}
+
+		// Skip 0.0.0.0, ::, ::0, etc.
+		if parsedIPAddr.IsUnspecified() {
+			continue
 		}
 
 		parsedIPAddrs = append(parsedIPAddrs, parsedIPAddr)

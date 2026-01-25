@@ -263,6 +263,11 @@ func main() {
 			slog.Error(fmt.Sprintf("Can't parse DDNS_TTL environment variable: %v", err))
 			os.Exit(1)
 		}
+
+		if config.TTL < 60 || config.TTL > 86400 {
+			slog.Error("DDNS_TTL must be between 60 and 86400 seconds")
+			os.Exit(1)
+		}
 	}
 
 	// Load and Parse Auth Config

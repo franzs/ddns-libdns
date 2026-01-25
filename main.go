@@ -196,6 +196,12 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 		parsedIPAddrs = append(parsedIPAddrs, parsedIPAddr)
 	}
 
+	if len(parsedIPAddrs) == 0 {
+		slog.Error("No specified IP address given", "myip", myip)
+		http.Error(w, "badrequest", http.StatusBadRequest)
+		return
+	}
+
 	zone, recordName, err := inferZoneAndName(r.Context(), normalizedHostname)
 	if err != nil {
 		slog.Error(err.Error())

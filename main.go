@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"net/netip"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/go-crypt/crypt"
@@ -80,7 +82,10 @@ func loadAuthUsers() error {
 }
 
 func inferZoneAndName(ctx context.Context, hostname string) (string, string, error) {
-	zones, _ := provider.ListZones(ctx)
+	zones, err := provider.ListZones(ctx)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to list zones: %w", err)
+	}
 
 	for _, z := range zones {
 		recordName := libdns.RelativeName(hostname, z.Name)
@@ -114,6 +119,9 @@ func updateDNS(ctx context.Context, zone, recordName string, ipaddrs []netip.Add
 func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	var parsedIPAddrs []netip.Addr
 
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+
 	// --- Authentication & Authorization ---
 
 	// Check HTTP Basic Auth
@@ -121,12 +129,17 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 		slog.Error("Can't decode username and password using BasicAuth(). No credentials?")
-		http.Error(w, "badauth", http.StatusOK)
+		http.Error(w, "badauth", http.StatusUnauthorized)
 		return
 	}
 
 	// Verify Credentials
 	user, exists := authUsers[username]
+	if !exists {
+		// Use a dummy hash to maintain consistent timing
+		user = User{PasswordHash: "$argon2id$v=19$m=4096,t=3,p=1$WThNMStEazRDM3NVQkIxOXlVaHRaQT09$3XjzaHozsLfjY3ejWY91y7sQ964r49uBsB15PZWVOGw"}
+	}
+
 	valid, err := crypt.CheckPassword(password, user.PasswordHash)
 	if !exists || !valid || err != nil {
 		// Differentiate slightly for logs, but return Generic 401 to client
@@ -173,10 +186,6 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, ip := range strings.Split(myip, ",") {
-		if ip == "0.0.0.0" || ip == "::0" {
-			continue
-		}
-
 		parsedIPAddr, err := netip.ParseAddr(ip)
 		if err != nil {
 			slog.Error("Unable to parse ip address using netip.ParseAddr()", "ipaddr", ip)
@@ -184,17 +193,28 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Skip 0.0.0.0, ::, ::0, etc.
+		if parsedIPAddr.IsUnspecified() {
+			continue
+		}
+
 		parsedIPAddrs = append(parsedIPAddrs, parsedIPAddr)
 	}
 
-	zone, recordName, err := inferZoneAndName(r.Context(), normalizedHostname)
+	if len(parsedIPAddrs) == 0 {
+		slog.Error("No specified IP address given", "myip", myip)
+		http.Error(w, "badrequest", http.StatusBadRequest)
+		return
+	}
+
+	zone, recordName, err := inferZoneAndName(ctx, normalizedHostname)
 	if err != nil {
 		slog.Error(err.Error())
 		http.Error(w, "dnserr", http.StatusBadRequest)
 		return
 	}
 
-	if err := updateDNS(r.Context(), zone, recordName, parsedIPAddrs); err != nil {
+	if err := updateDNS(ctx, zone, recordName, parsedIPAddrs); err != nil {
 		slog.Error(err.Error())
 		http.Error(w, "dnserr", http.StatusInternalServerError)
 		return
@@ -205,7 +225,7 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 		"hostname", normalizedHostname,
 		"zone", zone,
 		"recordname", recordName,
-		"ipaddr", myip)
+		"ipaddr", parsedIPAddrs)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("good " + myip))
@@ -248,6 +268,11 @@ func main() {
 			slog.Error(fmt.Sprintf("Can't parse DDNS_TTL environment variable: %v", err))
 			os.Exit(1)
 		}
+
+		if config.TTL < 60 || config.TTL > 86400 {
+			slog.Error("DDNS_TTL must be between 60 and 86400 seconds")
+			os.Exit(1)
+		}
 	}
 
 	// Load and Parse Auth Config
@@ -266,8 +291,30 @@ func main() {
 	http.HandleFunc("/v3/update", handleUpdate)
 
 	slog.Info("Starting ddns-libdns", "port", config.Port, "provider", identifier)
-	if err = http.ListenAndServe(":"+config.Port, nil); err != nil {
-		slog.Error(err.Error())
-		os.Exit(1)
+	server := &http.Server{
+		Addr:         ":" + config.Port,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			slog.Error(err.Error())
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Shutting down server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("Server forced to shutdown", "error", err)
 	}
 }

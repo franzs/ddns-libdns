@@ -129,7 +129,7 @@ func handleUpdate(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 		slog.Error("Can't decode username and password using BasicAuth(). No credentials?")
-		http.Error(w, "badauth", http.StatusOK)
+		http.Error(w, "badauth", http.StatusUnauthorized)
 		return
 	}
 

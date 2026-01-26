@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/go-crypt/crypt"
+	"github.com/go-playground/validator/v10"
 	"github.com/libdns/libdns"
 )
 
@@ -28,9 +29,9 @@ type Config struct {
 
 // UserConfig represents the JSON structure from the environment variable
 type UserConfig struct {
-	Username     string   `json:"username"`
-	PasswordHash string   `json:"passwordHash"`
-	Hostnames    []string `json:"hostnames"`
+	Username     string   `json:"username"     validate:"required"`
+	PasswordHash string   `json:"passwordHash" validate:"required,passwordhash"`
+	Hostnames    []string `json:"hostnames"    validate:"required,min=1,dive,required"`
 }
 
 // User represents the internal lookup structure
@@ -50,11 +51,29 @@ var (
 	provider  Provider
 )
 
+// Custom validator function for password hash
+func validPasswordHash(fl validator.FieldLevel) bool {
+	hash := fl.Field().String()
+	if hash == "" {
+		return false
+	}
+
+	_, err := crypt.Decode(hash)
+	return err == nil
+}
+
 func loadAuthUsers() error {
 	var rawUsers []UserConfig
 
+	validate := validator.New()
+	validate.RegisterValidation("passwordhash", validPasswordHash)
+
 	if err := json.Unmarshal([]byte(config.AuthJSON), &rawUsers); err != nil {
 		return fmt.Errorf("Failed to parse JSON from DDNS_AUTH_CONFIG: %v", err)
+	}
+
+	if err := validate.Var(rawUsers, "required,dive"); err != nil {
+		return fmt.Errorf("Failed to validate JSON from DDNS_AUTH_CONFIG: %v", err)
 	}
 
 	authUsers = make(map[string]User)

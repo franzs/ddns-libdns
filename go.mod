@@ -7,7 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/libdns/bunny v1.6.1
 	github.com/libdns/cloudflare v0.2.2
-	github.com/libdns/desec v1.0.1
+	github.com/libdns/desec v1.1.0
 	github.com/libdns/hetzner/v2 v2.0.1
 	github.com/libdns/ionos v1.2.0
 	github.com/libdns/libdns v1.1.1
@@ -34,5 +34,3 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 )
-
-replace github.com/libdns/desec => github.com/haylinmoore/libdns-desec v0.0.0-20260111194905-de70a1b5931c
